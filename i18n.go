@@ -35,9 +35,11 @@ import "sync"
 
 // The config of package.
 var config = &Config{}
+
 // Symbols that are used as a separator for parts of the key
 // when using the Tr function.
 var delimeters = `./\:`
+
 // Default locale
 // Returned by the LC function if the requested locale does not exist
 // By default is nil and in this way (locale object is nil), placeholder string
@@ -45,10 +47,13 @@ var delimeters = `./\:`
 // (see method SetAsDefault), and if the locale en_US was loaded,
 // it will be used as the default locale.
 var defloc *loc = nil
+
 // Map from locale name to object of this locale.
 var locales map[string]*loc
+
 // Map from locale name to slice of files from which this locale was loaded.
 var locdirs map[string][]string
+
 // Sema for async operations
 // ATTENTION!
 // This package is not fully thread-safe.
@@ -67,6 +72,24 @@ var sema sync.RWMutex
 func init() {
 	locales = make(map[string]*loc)
 	locdirs = make(map[string][]string)
+}
+
+
+// ========================================================================= //
+// =========================== PUBLIC FUNCTIONS ============================ //
+// ========================================================================= //
+
+// "LoadedLocales" returns the slice of strings that represents the list of
+// loaded locales.
+// Each string is the name of locale.
+func LoadedLocales() []string {
+	sema.RLock()
+	defer sema.RUnlock()
+	lc := make([]string, 0, len(locales))
+	for k, _ := range locales {
+		lc = append(lc, k)
+	}
+	return lc
 }
 
 
