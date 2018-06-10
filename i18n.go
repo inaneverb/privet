@@ -92,6 +92,19 @@ func LoadedLocales() []string {
 	return lc
 }
 
+// "LoadedLocalesFrom" returns the map from the name of locale to list of files
+// from which this locale was formed. The list of files is slice of strings.
+func LoadedLocalesFrom() map[string][]string {
+	sema.RLock()
+	defer sema.RUnlock()
+	lc := make(map[string][]string, len(locdirs))
+	for k, v := range locdirs {
+		lc[k] = make([]string, 0, len(v))
+		copy(lc[k], v)
+	}
+	return lc
+}
+
 
 // ========================================================================= //
 // ========================== PRIVATE FUNCTIONS ============================ //

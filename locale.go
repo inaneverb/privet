@@ -143,6 +143,27 @@ func makelocale(name string) *loc {
 	return loc
 }
 
+// "rmlocifempty" deletes the locale with the specified 'name' only if it is empty.
+// Returns true if the locale with the specified name has been deleted.
+// Otherwise false is returned.
+// ATTENTION!
+// Checking whether the locale is empty is only performed by size of 'content'
+// and 'subnodes' of root locale node. This check is not recursive!
+// todo: Make this function recursive
+func rmlocifempty(name string) bool {
+	sema.Lock()
+	defer sema.Unlock()
+	loc := locales[name]
+	if loc == nil {
+		return false
+	}
+	if len(loc.subnodes) == 0 && len(loc.content) == 0 {
+		delete(locales, name)
+		return true
+	}
+	return false
+}
+
 // ========================================================================= //
 // =========================== PRIVATE METHODS ============================= //
 // ========================================================================= //

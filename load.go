@@ -90,6 +90,8 @@ func Load(rootdir string) error {
 		// into locale
 		fullpath := filepath.Join(rootdir, dir)
 		if err := loc.load(fullpath); err != nil {
+			// Delete locale if it's not empty
+			rmlocifempty(dir)
 			return err
 		}
 		// If success, increase count of successful loaded directories
