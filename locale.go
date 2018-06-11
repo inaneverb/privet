@@ -30,16 +30,16 @@ import "path/filepath"
 import "strings"
 import "encoding/json"
 
-// Type "loc"
+// Type "Locale"
 // This type represents the locale.
 // Since this type is an alias to 'locnode', architecturally this type is
 // root node of locale. See 'locnode' type for details.
-type loc locnode
+type Locale locnode
 
 // Type "Args"
 // This type represents map of arguments that is used for interpolating
 // translated phrase.
-// See methods "Tr" of 'loc' type and "tr" of 'locnode' type for details.
+// See methods "Tr" of 'Locale' type and "tr" of 'locnode' type for details.
 type Args map[string]interface{}
 
 
@@ -52,8 +52,8 @@ type Args map[string]interface{}
 // the default locale will be returned.
 // But if the default locale isn't set, nil is returned.
 // But using the method "Tr" for the nil object is safe.
-// See method "Tr" of 'loc' for details.
-func LC(name string) *loc {
+// See method "Tr" of 'Locale' for details.
+func LC(name string) *Locale {
 	if name == "" { return nil }
 	loc := getlocale(name)
 	if loc == nil { return deflocale() }
@@ -62,7 +62,7 @@ func LC(name string) *loc {
 
 // "Tr" returns interpolated (using the specified 'args') translated string
 // by the specified 'key' for locale with name 'locname'.
-// See methods LC and Tr of 'loc' for details.
+// See methods LC and Tr of 'Locale' for details.
 func Tr(locname, key string, args ...interface{}) string {
 	return LC(locname).Tr(key, args...)
 }
@@ -81,7 +81,7 @@ func Tr(locname, key string, args ...interface{}) string {
 // If key is empty, string '<empty key>' is returned.
 // If the phrase by this key doesn't exists, string '${{key}}' is returned,
 // where key is the specified 'key'.
-func (l *loc) Tr(key string, args ...interface{}) string {
+func (l *Locale) Tr(key string, args ...interface{}) string {
 	// Validate receiver and arguments
 	if l == nil  { return "<?LC>${{"+key+"}}" }
 	if key == "" { return "<empty key>" }
@@ -98,7 +98,7 @@ func (l *loc) Tr(key string, args ...interface{}) string {
 // After the some locale was selected as default locale,
 // the "LC" function will return this locale if can't find requested locale.
 // See "LC" function for details.
-func (l *loc) SetAsDefault() error {
+func (l *Locale) SetAsDefault() error {
 	if l == nil {
 		return fmt.Errorf("current object of locale is nil")
 	}
@@ -115,7 +115,7 @@ func (l *loc) SetAsDefault() error {
 
 // "getlocale" returns the locale with the specified 'name'.
 // If this locale doesn't exists, nil is returned.
-func getlocale(name string) *loc {
+func getlocale(name string) *Locale {
 	sema.RLock()
 	defer sema.RUnlock()
 	return locales[name]
@@ -123,7 +123,7 @@ func getlocale(name string) *loc {
 
 // "deflocale" returns the default locale.
 // If no locale marked as default, nil is returned.
-func deflocale() *loc {
+func deflocale() *Locale {
 	sema.RLock()
 	defer sema.RUnlock()
 	return defloc
@@ -132,13 +132,13 @@ func deflocale() *loc {
 // "makelocale" creates a new locale with the specified 'name'.
 // Also, if locale with the requested name is already exists, it will be returned.
 // Otherwise, new locale will be added into map of locales, and will be returned.
-func makelocale(name string) *loc {
+func makelocale(name string) *Locale {
 	sema.Lock()
 	defer sema.Unlock()
 	if loc, ok := locales[name]; ok && loc != nil {
 		return loc
 	}
-	loc := (*loc)(makenode())
+	loc := (*Locale)(makenode())
 	locales[name] = loc
 	return loc
 }
@@ -175,7 +175,7 @@ func rmlocifempty(name string) bool {
 // Returns nil, if directory contain valid locale files and these files were
 // successfully loaded and processed.
 // Otherwise, error object is returned.
-func (l *loc) load(dirpath string) error {
+func (l *Locale) load(dirpath string) error {
 	// Load all entities from directory, check error, check length
 	entities, err := ioutil.ReadDir(dirpath)
 	if err != nil {
@@ -226,7 +226,7 @@ func (l *loc) load(dirpath string) error {
 // a dictionary - map from keys to translated phrases.
 // Returns nil, if file was successfully loaded and processed.
 // Otherwise error object is returned.
-func (l *loc) loadJSON(fpath string) error {
+func (l *Locale) loadJSON(fpath string) error {
 	// Read file
 	bytes, err := ioutil.ReadFile(fpath)
 	if err != nil {

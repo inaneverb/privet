@@ -46,10 +46,10 @@ var delimeters = `./\:`
 // will be returned; but you can set any locale as default
 // (see method SetAsDefault), and if the locale en_US was loaded,
 // it will be used as the default locale.
-var defloc *loc = nil
+var defloc *Locale = nil
 
 // Map from locale name to object of this locale.
-var locales map[string]*loc
+var locales map[string]*Locale
 
 // Map from locale name to slice of files from which this locale was loaded.
 var locdirs map[string][]string
@@ -70,7 +70,7 @@ var sema sync.RWMutex
 // Initialize function
 // Allocates memory for maps.
 func init() {
-	locales = make(map[string]*loc)
+	locales = make(map[string]*Locale)
 	locdirs = make(map[string][]string)
 }
 
