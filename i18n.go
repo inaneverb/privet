@@ -34,7 +34,10 @@ import "sync"
 // ========================================================================= //
 
 // The config of package.
-var config = &Config{}
+var Config = struct {
+	OverwriteExistingKey bool
+	LCEmptyStringNil bool
+} {}
 
 // Symbols that are used as a separator for parts of the key
 // when using the Tr function.

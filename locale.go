@@ -53,11 +53,25 @@ type Args map[string]interface{}
 // But if the default locale isn't set, nil is returned.
 // But using the method "Tr" for the nil object is safe.
 // See method "Tr" of 'Locale' for details.
+// UPDATE 1.1
+// By default, empty string as name means that LC will return the object
+// of default locale.
+// If this behaviour is wrong, change 'LCEmptyStringNil' in loaded config
 func LC(name string) *Locale {
-	if name == "" { return nil }
+	if name == "" && Config.LCEmptyStringNil {
+		return nil
+	} else {
+		return deflocale()
+	}
 	loc := getlocale(name)
 	if loc == nil { return deflocale() }
 	return loc
+}
+
+// "DefLC" returns the object of default locale.
+// If the default locale isn't set, nil is returned
+func DefLC() *Locale {
+	return deflocale()
 }
 
 // "Tr" returns interpolated (using the specified 'args') translated string
@@ -261,10 +275,10 @@ func (l *Locale) loadJSON(fpath string) error {
 	switch v.Type().Kind() {
 	// If map, load map into generated subnode
 	case reflect.Map:
-		return subnode.json_loadMap(v, config.OverwriteExistingKey)
+		return subnode.json_loadMap(v, Config.OverwriteExistingKey)
 	// If slice, load slice into generated subnode
 	case reflect.Slice:
-		return subnode.json_loadSlice(v, config.OverwriteExistingKey)
+		return subnode.json_loadSlice(v, Config.OverwriteExistingKey)
 	// Otherwise, return error
 	default:
 		return fmt.Errorf("can't unmarshal JSON data into Golang datatypes " +

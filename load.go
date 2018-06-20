@@ -27,14 +27,6 @@ import "fmt"
 import "io/ioutil"
 import "path/filepath"
 
-// Type "Config"
-// This type represents the config that (will be) used for loading
-// locale directories and files.
-// todo: Implement dependency the Load() method by the config
-type Config struct {
-	OverwriteExistingKey bool
-}
-
 
 // ========================================================================= //
 // =========================== PUBLIC FUNCTIONS ============================ //
