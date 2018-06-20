@@ -82,11 +82,11 @@ func init() {
 // "LoadedLocales" returns the slice of strings that represents the list of
 // loaded locales.
 // Each string is the name of locale.
-func LoadedLocales() []string {
+func LoadedLocales() []*Locale {
 	sema.RLock()
 	defer sema.RUnlock()
-	lc := make([]string, 0, len(locales))
-	for k, _ := range locales {
+	lc := make([]*Locale, 0, len(locales))
+	for _, k := range locales {
 		lc = append(lc, k)
 	}
 	return lc
