@@ -58,10 +58,12 @@ type Args map[string]interface{}
 // of default locale.
 // If this behaviour is wrong, change 'LCEmptyStringNil' in loaded config
 func LC(name string) *Locale {
-	if name == "" && Config.LCEmptyStringNil {
-		return nil
-	} else {
-		return deflocale()
+	if name == "" {
+		if Config.LCEmptyStringNil {
+			return nil
+		} else {
+			return deflocale()
+		}
 	}
 	loc := getlocale(name)
 	if loc == nil { return deflocale() }
