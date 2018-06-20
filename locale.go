@@ -72,6 +72,16 @@ func Tr(locname, key string, args ...interface{}) string {
 // ============================ PUBLIC METHODS ============================= //
 // ========================================================================= //
 
+// "Name" returns the name of current locale.
+// If current locale is nil, empty string is returned.
+func (l *Locale) Name() string {
+	if l == nil { return "" }
+	for name, loc := range locales {
+		if l == loc { return name }
+	}
+	return ""
+}
+
 // "Tr" tries to get translate phrase by the specified 'key' and then tries to
 // interpolate this phrase using 'args' (see type Args) if the 'args' is specified.
 // If this method is called on nil object, the special string will be returned.
