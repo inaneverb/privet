@@ -61,15 +61,12 @@ If it's false, nil is returned.
 */
 func (n *localeNode) subNode(name string, createIfNotExist bool) *localeNode {
 	subNode := n.subNodes[name]
+
 	if subNode == nil && createIfNotExist {
-		subNode = &localeNode{
-			parent:         n.parent,
-			subNodes:       make(map[string]*localeNode),
-			content:        make(map[string]string),
-			contentTmp:     make(map[string]string),
-			usedSourcesIdx: nil,
-		}
+		subNode = n.parent.makeSubNode()
+		n.subNodes[name] = subNode
 	}
+
 	return subNode
 }
 
