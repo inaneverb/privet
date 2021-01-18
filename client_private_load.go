@@ -221,6 +221,12 @@ func (c *Client) loadItem(sourceItemIdx int, overwrite bool) *ekaerr.Error {
 	}
 
 	//goland:noinspection GoNilness
+	if err.IsNil() && atomic.LoadUint32(&c.config.SkipParseFilepath) == 0 {
+		err = sourceItem.findLocaleInFilepath().
+			AddMessage(s)
+	}
+
+	//goland:noinspection GoNilness
 	if err.IsNil() {
 		err = sourceItem.loadMetaData(rootMap).
 			AddMessage(s)

@@ -39,6 +39,7 @@ type (
 			OverwriteExistingKey   uint32
 			LCEmptyLocaleNameAsNil uint32
 			LCNotFoundLocaleAsNil  uint32
+			SkipParseFilepath      uint32
 		}
 
 		defaultLocale unsafe.Pointer
