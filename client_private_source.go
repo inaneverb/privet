@@ -275,7 +275,7 @@ func (c *Client) sourceString(dest *[]SourceItem, source string, deep int) *ekae
 		}
 
 		switch ext {
-		case "toml", "yml", "yaml":
+		case "toml", "yml", "yaml", "json":
 			break
 		case "":
 			fallthrough
@@ -312,7 +312,7 @@ func (c *Client) sourceString(dest *[]SourceItem, source string, deep int) *ekae
 		b := append([]byte(nil), c.buf.Bytes()...)
 
 		switch ext {
-		case "yml", "yaml":
+		case "yml", "yaml", "json":
 			c.sourceApprove(dest, SOURCE_ITEM_TYPE_FILE_YAML, source, b, md5sum)
 		case "toml":
 			c.sourceApprove(dest, SOURCE_ITEM_TYPE_FILE_TOML, source, b, md5sum)
