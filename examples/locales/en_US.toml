@@ -1,5 +1,9 @@
-[__MetaData__]
-LocaleName = "en_US"
+# Not need to specify locale name, cause filepath contains it
+# Look at the filename. It's "en_US". So, there is. A locale name.
+# Found more than once locale name means an error.
+#
+#[__MetaData__]
+#LocaleName = "en_US"
 
 [Main]
 Greetings = "Hello, {{name}}!"
