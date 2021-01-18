@@ -16,6 +16,9 @@ import (
 	"strings"
 
 	"github.com/qioalice/ekago/v2/ekaerr"
+	"github.com/qioalice/ekago/v2/ekaunsafe"
+
+	"github.com/modern-go/reflect2"
 )
 
 //goland:noinspection GoSnakeCaseUsage
@@ -29,6 +32,161 @@ const (
 	*/
 	_SOURCE_MAX_RECURSIVELY_DIRECTORY_SCAN = 16
 )
+
+/*
+source literally does things Client.Source() method describes.
+
+All logic moved to the private method, because of changing signature.
+Original Client.Source() ready to get variadic number of interface{} arguments,
+but this source() method wants []interface{}.
+Thus, calling source(args) as an once statement of Source() does not lead
+to unnecessary copying. So for package level's Source() function.
+*/
+func (c *Client) source(args []interface{}) *ekaerr.Error {
+	const s = "Failed to count one or many locale sources. "
+	switch {
+
+	case !c.isValid():
+		return ekaerr.IllegalState.
+			New(s + "Client is not valid.").
+			Throw()
+
+	case len(args) == 0:
+		return ekaerr.IllegalArgument.
+			New(s + "There are no sources.").
+			Throw()
+	}
+
+	if !(c.changeState(_LLS_STANDBY, _LLS_SOURCE_PENDING) ||
+		c.changeState(_LLS_READY, _LLS_SOURCE_PENDING)) {
+
+		allowedStates := []string{
+			strState(_LLS_STANDBY),
+			strState(_LLS_READY),
+		}
+
+		return ekaerr.IllegalState.
+			New(s + "Another Source() or Load() called.").
+			AddFields("privet_allowed_states", strings.Join(allowedStates, ", ")).
+			Throw()
+	}
+
+	// We got "lock" of c.state as _LLS_SOURCE_PENDING.
+	// We need to change it to _LLS_STANDBY or _LLS_READY when this func is over
+	// depends on HOW this func is over.
+	//
+	// _LLS_STANDBY, when:
+	//  - All new sources has been counted, nil is returned to the caller;
+	//  - New sources has not been counted, not nil error is returned to the caller,
+	//    AND there was already counted NEW sources (previous call of Source()).
+	//
+	// _LLS_READY, when:
+	//  - New sources has not been counted, not nil error is returned to the caller,
+	//    AND there was NO already counted NEW sources (was no previous calls of Source()),
+	//    AND there was previous successful call of Load().
+	defer func(c *Client){
+		if len(c.sourcesTmp) == 0 && c.storage != nil {
+			c.changeStateForce(_LLS_READY)
+		} else {
+			c.changeStateForce(_LLS_STANDBY)
+		}
+	}(c)
+
+	var (
+		sources = make([]SourceItem, 0, len(args))
+		err     *ekaerr.Error
+	)
+
+	//goland:noinspection GoNilness
+	for _, arg := range args {
+
+		switch argType := reflect2.TypeOf(arg); argType.RType() {
+
+		case ekaunsafe.RTypeString():
+			err = c.sourceString(&sources, arg.(string), 0)
+
+		case ekaunsafe.RTypeStringArray():
+			arr := arg.([]string)
+			for i, n := 0, len(arr); i < n && err.IsNil(); i ++ {
+				err = c.sourceString(&sources, arr[i], 0)
+			}
+
+		case ekaunsafe.RTypeBytes():
+			err = c.sourceBytes(&sources, arg.([]byte))
+
+		case ekaunsafe.RTypeBytesArray():
+			arr := arg.([][]byte)
+			for i, n := 0, len(arr); i < n && err.IsNil(); i++ {
+				err = c.sourceBytes(&sources, arr[i])
+			}
+
+		default:
+			return ekaerr.IllegalArgument.
+				New(s + "Unexpected type of source.").
+				AddFields("privet_source_type", argType.String()).
+				Throw()
+		}
+
+		if err.IsNotNil() {
+			return err.
+				AddMessage(s).
+				Throw()
+		}
+	}
+
+	// There are two MD5 checks.
+	// First that there is no the same sources just counted.
+	// Second that there is no the same sources in just counted sources
+	// and already counted.
+
+	var (
+		i, j int
+		// se2[j] (if not nil) contains the SourceItem with the same content,
+		// as sources[i] contains. Used to catch an error.
+		se2 []SourceItem
+	)
+
+	//goland:noinspection GoNilness
+	for n := len(sources); i < n && se2 == nil; i++ {
+
+		//goland:noinspection GoNilness
+		for j = i+1; j < n && se2 == nil; j++ {
+
+			if sources[i].md5 == sources[j].md5 {
+				se2 = sources
+			}
+		}
+
+		for j, m := 0, len(c.sourcesTmp); j < m && se2 == nil; j++ {
+			if sources[i].md5 == c.sourcesTmp[j].md5 {
+				se2 = c.sourcesTmp
+			}
+		}
+	}
+
+	if se2 != nil {
+		return ekaerr.IllegalArgument.
+			New(s + "Two sources with the same content detected.").
+			AddFields(
+				"privet_source_1", sources[i].Path,
+				"privet_source_2", se2[j].Path).
+			Throw()
+	}
+
+	if len(sources) == 0 {
+		return ekaerr.IllegalArgument.
+			New(s + "There are no valid sources.").
+			Throw()
+	}
+
+	if len(c.sourcesTmp) != 0 {
+		c.sourcesTmp = append(c.sourcesTmp, sources...)
+	} else {
+		c.sourcesTmp = sources
+	}
+
+	return nil
+}
 
 /*
 sourceString tries to treat s as a path to file or directory.
