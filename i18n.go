@@ -1,213 +1,62 @@
-// Copyright © 2018. All rights reserved.
-// Author: Alice Qio.
-// Contacts: <qioalice@gmail.com>.
+// Copyright © 2020. All rights reserved.
+// Author: Ilya Stroy.
+// Contacts: qioalice@gmail.com, https://github.com/qioalice
 // License: https://opensource.org/licenses/MIT
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom
-// the Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-// IN THE SOFTWARE.
 
-package i18n
+package privet
 
-import "fmt"
-import "reflect"
-import "strings"
-import "sync"
+import (
+	"github.com/qioalice/ekago/v2/ekaerr"
+)
 
+//goland:noinspection GoSnakeCaseUsage
+const (
+	DEFAULT_DELIMITER byte = '/'
+)
 
-// ========================================================================= //
-// ============================ INITIALIZATION ============================= //
-// ========================================================================= //
+/*
 
-// The config of package.
-var Config = struct {
-	OverwriteExistingKey bool
-	LCEmptyStringNil bool
-} {}
-
-// Symbols that are used as a separator for parts of the key
-// when using the Tr function.
-var delimeters = `./\:`
-
-// Default locale
-// Returned by the LC function if the requested locale does not exist
-// By default is nil and in this way (locale object is nil), placeholder string
-// will be returned; but you can set any locale as default
-// (see method SetAsDefault), and if the locale en_US was loaded,
-// it will be used as the default locale.
-var defloc *Locale = nil
-
-// Map from locale name to object of this locale.
-var locales map[string]*Locale
-
-// Map from locale name to slice of files from which this locale was loaded.
-var locdirs map[string][]string
-
-// Sema for async operations
-// ATTENTION!
-// This package is not fully thread-safe.
-// It is guaranteed that when locals are loaded (upgraded),
-// it is impossible to obtain locale objects, but access to the locale objects
-// is done by the pointer.
-// It means that through the saved pointer during the load (update) period
-// of the locale, it is possible to access the locale object,
-// which can be updated at the moment.
-// In the future, the concept will be revised,
-// or the package will become fully thread-safe.
-var sema sync.RWMutex
-
-// Initialize function
-// Allocates memory for maps.
-func init() {
-	locales = make(map[string]*Locale)
-	locdirs = make(map[string][]string)
+*/
+func Source(args ...interface{}) *ekaerr.Error {
+	return defaultClient.source(args).Throw()
 }
 
+/*
 
-// ========================================================================= //
-// =========================== PUBLIC FUNCTIONS ============================ //
-// ========================================================================= //
-
-// "LoadedLocales" returns the slice of strings that represents the list of
-// loaded locales.
-// Each string is the name of locale.
-func LoadedLocales() []*Locale {
-	sema.RLock()
-	defer sema.RUnlock()
-	lc := make([]*Locale, 0, len(locales))
-	for _, k := range locales {
-		lc = append(lc, k)
-	}
-	return lc
+*/
+func Load() *ekaerr.Error {
+	return defaultClient.load().Throw()
 }
 
-// "LoadedLocalesFrom" returns the map from the name of locale to list of files
-// from which this locale was formed. The list of files is slice of strings.
-func LoadedLocalesFrom() map[string][]string {
-	sema.RLock()
-	defer sema.RUnlock()
-	lc := make(map[string][]string, len(locdirs))
-	for k, v := range locdirs {
-		lc[k] = make([]string, 0, len(v))
-		copy(lc[k], v)
-	}
-	return lc
+/*
+LC returns the requested Locale by its name.
+
+If the Locale with the specified name doesn't exists (or if name is empty):
+ - Default Locale is returned if any locale marked as default;
+ - nil is returned if no locale is marked as default.
+
+You may change that behaviour using:
+
+ 1. Config.LCEmptyLocaleNameAsNil set to true (false by default)
+    if you want to get nil Locale if name is empty
+    (even if any Locale is marked as default).
+
+ 2. Config.LCNotFoundLocaleAsNil set to true (false by default)
+    if you want to get nil Locale if Locale with requested name not found
+    (even if any Locale is marked as default).
+*/
+func LC(name string) *Locale {
+	return defaultClient.LC(name)
 }
 
-
-// ========================================================================= //
-// ========================== PRIVATE FUNCTIONS ============================ //
-// ========================================================================= //
-
-// "extractargs" extracts the objects of Args type or map[string]<Type> type
-// from 'args' slice and unite them into one object of the Args type.
-// Returns this object or nil if argument is empty slice.
-func extractargs(args []interface{}) Args {
-	// Avoid processing if args is nil/empty
-	if len(args) == 0 {
-		return nil
-	}
-	// Search 'Args' type in args, unite them if there are several
-	realargs := Args{}
-	for _, arg := range args {
-		if arg == nil {
-			continue
-		}
-		// If type of 'arg' is 'Args', copy all args to 'realargs'
-		if margs, ok := arg.(Args); ok {
-			for k, v := range margs {
-				realargs[k] = v
-			}
-			continue
-		}
-		// If type is map[string]??
-		rv := reflect.ValueOf(arg)
-		tv := rv.Type()
-		if tv.Kind() != reflect.Map {
-			continue
-		}
-		// Get type of key of map, check whether is string
-		if tv.Key().Kind() != reflect.String {
-			continue
-		}
-		// Copy args using reflect
-		for _, k := range rv.MapKeys() {
-			realargs[k.String()] = rv.MapIndex(k).Interface()
-		}
-	} // end loop over args
-	return realargs
+func Default() *Locale {
+	return defaultClient.Default()
 }
 
-// "format" formats the string 's' using 'args' for interpolation.
-// Returns string 's' in which all keys (format '{{<key_name>}}') that exists
-// in 'args' will be replaced by value at this key from 'args'.
-// Unused values (in 'args') will be ignored.
-// If string 's' have some key that 'args' doesn't, this key will be left
-// in its original form.
-func format(s string, args Args) string {
-	// Avoid processing if args is nil/empty or s is ""
-	if s == "" || args == nil || len(args) == 0 { return s }
-	result := ""
-	// Loop while original string isn't empty
-	for s != "" {
-		// Get the key start index
-		// If this index is -1, append rest part of original string to result string
-		// and force next iteration (at that the loop will be completed)
-		idx_begin := strings.Index(s, "{{")
-		if idx_begin == -1 {
-			result += s
-			s = ""
-			continue
-		}
-		// Append part of string before the beginning of key to result string
-		// Delete "{{" and appended part from rest of original string
-		result += s[:idx_begin]
-		s = s[idx_begin+2:]
-		// Get the key end index (since the key start index)
-		// If this index is -1, append back "{{" (but to the result string)
-		// and append rest part to the result string
-		// In generally, it means that key has form "{{...", that is incorrect
-		// In this way, we think that it's part of string
-		// Also, force the next iteration (at that the loop will be completed)
-		idx_end := strings.Index(s, "}}")
-		if idx_end == -1 {
-			result += "{{" + s
-			s = ""
-			continue
-		}
-		// Extract the key, skip "}}" in the original string
-		key := s[:idx_end]
-		s = s[idx_end+2:]
-		// Find key in args
-		// If argument was found, format it and append to result string
-		// Otherwise, save key in its original form
-		if val, ok := args[key]; ok {
-			result += formatarg(val)
-		} else {
-			result += "{{"+key+"}}"
-		}
-	} // end loop over original string
-	return result
-}
-
-// "formatargs" represents the argument 'i' of interface{} type as string.
-// Returns this string.
-// At this moment, works through fmt.Sprintf function.
-// May be this behaviour will be changed in the future.
-func formatarg(i interface{}) string {
-	return fmt.Sprintf("%+v", i)
+/*
+Tr is an alias for LC(localeName).Tr(key, args).
+See LC() function and Locale.Tr() method for more details.
+*/
+func Tr(localeName, key string, args Args) string {
+	return defaultClient.LC(localeName).Tr(key, args)
 }
