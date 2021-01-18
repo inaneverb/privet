@@ -6,6 +6,7 @@
 package privet
 
 import (
+	"path/filepath"
 	"strings"
 	"unsafe"
 
@@ -57,10 +58,14 @@ func (si *SourceItem) loadMetaData(root map[string]interface{}) *ekaerr.Error {
 		}
 	}
 
-	if metaData == nil {
+	switch {
+	case metaData == nil && si.LocaleName == "":
 		return ekaerr.IllegalFormat.
 			New(s + "Metadata not found, or has an incorrect tag.").
 			Throw()
+
+	case metaData == nil:
+		return nil
 	}
 
 	// Value must be an object or an array with one object.
@@ -88,7 +93,7 @@ func (si *SourceItem) loadMetaData(root map[string]interface{}) *ekaerr.Error {
 			Throw()
 	}
 
-	if len(metaDataMap) == 0 {
+	if si.LocaleName == "" && len(metaDataMap) == 0 {
 		return ekaerr.IllegalFormat.
 			New(s + "Metadata found but does not have any field.").
 			AddFields("privet_metadata_key", metaDataOriginalKey).
@@ -105,7 +110,9 @@ func (si *SourceItem) loadMetaData(root map[string]interface{}) *ekaerr.Error {
 					t.UnsafeSet(unsafe.Pointer(&si.LocaleName), ekaunsafe.TakeRealAddr(value))
 				} else {
 					return ekaerr.IllegalFormat.
-						New(s + "Metadata found, but locale name is ambiguous. Found two or more locale names.").
+						New(s + "Metadata found, but locale name is ambiguous. " +
+							"Found two or more locale names. " +
+							"Maybe filepath already contain locale name?").
 						AddFields("privet_metadata_key", metaDataOriginalKey).
 						Throw()
 				}
@@ -134,6 +141,84 @@ func (si *SourceItem) loadMetaData(root map[string]interface{}) *ekaerr.Error {
 			New(s + "Metadata found but locale name has an incorrect format. Should be: xx_YY.").
 			AddFields("privet_metadata_key", metaDataOriginalKey).
 			Throw()
+	}
+
+	return nil
+}
+
+/*
+findLocaleInFilepath tries to find a locale name in the current SourceItem's filepath.
+Any part of filepath MAY contain (it's not necessary to be exactly equal)
+a locale name. If it so, it will be parsed and associated with the current SourceItem.
+
+Returns nil if filepath don't have a locale name,
+but an error if contain more than one.
+*/
+func (si *SourceItem) findLocaleInFilepath() *ekaerr.Error {
+	const s = "Failed to check whether source filepath contains locale name. "
+
+	const SEPARATORS = "_-. "
+
+	var (
+		// pathParts contains not exactly directories and filename,
+		// but a parts of that directories and filename,
+		// that are split by any of allowed separator.
+		pathParts []string
+
+		// tmp contains a parts of one directory name or file name.
+		// These parts are will be added to the pathParts later.
+		tmp = make([]string, 0, 32)
+	)
+
+	for _, filePathPart := range strings.Split(
+		si.Path[len(filepath.VolumeName(si.Path)):], // si.Path w/o volume
+		string(filepath.Separator),                  // splits by os.PathSeparator
+	) {
+		if filePathPart == "" {
+			continue
+		}
+
+		tmp = tmp[:0]
+
+		for
+		index := strings.IndexAny(filePathPart, SEPARATORS);
+		index != -1;
+		index = strings.IndexAny(filePathPart, SEPARATORS){
+			tmp = append(tmp, filePathPart[:index])
+			tmp = append(tmp, string(filePathPart[index]))
+			filePathPart = filePathPart[index+1:]
+		}
+
+		// Do not forgot to add last item (or once one if there was no separator).
+		tmp = append(tmp, filePathPart)
+
+		// Analyse pathPartParts.
+		// Concatenate sequences of "xx", "_", "YY" if there any.
+		// Remove separators (from ALLOWED_SEPARATORS) otherwise.
+
+		for i, n := 0, len(tmp); i < n; i++ {
+			if i < n-2  && len(tmp[i]) + len(tmp[i+1]) + len(tmp[i+2]) == 5 {
+				if s := tmp[i] + tmp[i+1] + tmp[i+2]; isValidLocaleName(s) {
+					pathParts = append(pathParts, s)
+					i += 2
+				}
+			} else if len(tmp[i]) > 1 || strings.IndexByte(SEPARATORS, tmp[i][0]) == -1 {
+				pathParts = append(pathParts, tmp[i])
+			}
+		}
+	}
+
+	for _, pathPart := range pathParts {
+		switch proceed := isValidLocaleName(pathPart); {
+
+		case proceed && si.LocaleName == "":
+			si.LocaleName = pathPart
+
+		case proceed && si.LocaleName != "":
+			return ekaerr.IllegalFormat.
+				New(s + "Locale name is ambiguous. Found two or more locale names in filepath.").
+				Throw()
+		}
 	}
 
 	return nil
