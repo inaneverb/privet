@@ -7,6 +7,7 @@ package privet
 
 import (
 	"strings"
+	"unsafe"
 
 	"github.com/qioalice/ekago/v2/ekaerr"
 	"github.com/qioalice/ekago/v2/ekaunsafe"
@@ -96,12 +97,12 @@ func (si *SourceItem) loadMetaData(root map[string]interface{}) *ekaerr.Error {
 
 	// Extract locale name
 	for key, value := range metaDataMap {
-		switch strings.TrimSpace(key) {
+		switch strings.ToLower(key) {
 
 		case "locale_name", "localename", "locale", "name":
 			if t := reflect2.TypeOf(value); t.RType() == ekaunsafe.RTypeString() {
 				if si.LocaleName == "" {
-					t.Set(&si.LocaleName, &value)
+					t.UnsafeSet(unsafe.Pointer(&si.LocaleName), ekaunsafe.TakeRealAddr(value))
 				} else {
 					return ekaerr.IllegalFormat.
 						New(s + "Metadata found, but locale name is ambiguous. Found two or more locale names.").

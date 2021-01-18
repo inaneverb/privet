@@ -159,7 +159,7 @@ func (c *Client) load() *ekaerr.Error {
 	c.sourcesTmp = c.sourcesTmp[:0]
 
 	c.phrasesTotal = phrasesCountTotal
-	c.localesTotal = uint32(len(c.storageTmp))
+	c.localesTotal = uint32(len(c.storage))
 
 	c.setDefaultLocale(nil)
 
@@ -179,7 +179,7 @@ func (c *Client) loadItem(sourceItemIdx int, overwrite bool) *ekaerr.Error {
 	var (
 		err        *ekaerr.Error
 		rootMap    = make(map[string]interface{})
-		sourceItem = c.sourcesTmp[sourceItemIdx]
+		sourceItem = &c.sourcesTmp[sourceItemIdx]
 	)
 
 	switch sourceItem.Type {
@@ -222,7 +222,8 @@ func (c *Client) loadItem(sourceItemIdx int, overwrite bool) *ekaerr.Error {
 
 	//goland:noinspection GoNilness
 	if err.IsNil() {
-		err = sourceItem.loadMetaData(rootMap)
+		err = sourceItem.loadMetaData(rootMap).
+			AddMessage(s)
 	}
 
 	//goland:noinspection GoNilness
