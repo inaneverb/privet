@@ -39,7 +39,7 @@ func (c *Client) isValid() bool {
 TODO: comment
 */
 func (c *Client) changeState(from, to uint32) bool {
-	return !atomic.CompareAndSwapUint32(&c.state, from, to)
+	return atomic.CompareAndSwapUint32(&c.state, from, to)
 }
 
 /*

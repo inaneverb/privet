@@ -66,24 +66,23 @@ func (si *SourceItem) loadMetaData(root map[string]interface{}) *ekaerr.Error {
 	switch t := reflect2.TypeOf(metaData); t.RType() {
 
 	case ekaunsafe.RTypeMapStringInterface():
-		t.Set(&metaDataMap, &metaDataMap)
+		metaDataMap = metaData.(map[string]interface{})
 
 	case rtypeArrMapStringInterface:
-		var arr []map[string]interface{}
-		t.Set(&arr, &metaDataMap)
+		arr := metaData.([]map[string]interface{})
 		if len(arr) != 1 {
 			return ekaerr.IllegalFormat.
 				New(s + "Metadata found but is ambiguous. Found two or more objects.").
 				AddFields("privet_metadata_key", metaDataOriginalKey).
 				Throw()
 		}
-		reflect2.TypeOf(metaDataMap).Set(&metaDataMap, &arr[0])
+		metaDataMap = arr[0]
 
 	default:
 		return ekaerr.IllegalFormat.
 			New(s + "Metadata tag found but has an incorrect type. Should be an object.").
 			AddFields(
-				"privet_metadata_key", metaDataOriginalKey,
+				"privet_metadata_key",  metaDataOriginalKey,
 				"privet_metadata_type", t.String()).
 			Throw()
 	}
@@ -113,7 +112,7 @@ func (si *SourceItem) loadMetaData(root map[string]interface{}) *ekaerr.Error {
 				return ekaerr.IllegalFormat.
 					New(s + "Metadata found, but locale name has an incorrect type.").
 					AddFields(
-						"privet_metadata_key", metaDataOriginalKey,
+						"privet_metadata_key",              metaDataOriginalKey,
 						"privet_metadata_locale_name_type", t.String()).
 					Throw()
 			}

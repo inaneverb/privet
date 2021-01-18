@@ -221,7 +221,7 @@ func (c *Client) sourceString(dest *[]SourceItem, source string, deep int) *ekae
 	}
 
 	if !filepath.IsAbs(source) {
-		if workDir, legacyErr := os.Getwd(); legacyErr != nil {
+		if workDir, legacyErr := os.Getwd(); legacyErr == nil {
 			source = filepath.Join(workDir, source)
 		} else {
 			return ekaerr.InternalError.
@@ -269,7 +269,7 @@ func (c *Client) sourceString(dest *[]SourceItem, source string, deep int) *ekae
 
 		// Ignore files that has an unsupported extension.
 
-		ext := strings.ToLower(filepath.Ext(s))
+		ext := strings.ToLower(filepath.Ext(source))
 		if ext != "" {
 			ext = ext[1:]
 		}
@@ -354,9 +354,9 @@ func (c *Client) sourceString(dest *[]SourceItem, source string, deep int) *ekae
 
 		// Before we gonna do a recursive call we need to construct full absolute path
 		// to each included item in the current directory under processing.
-		s := filepath.Join(source, fi.Name())
+		source := filepath.Join(source, fi.Name())
 
-		if err := c.sourceString(dest, s, deep+1); err.IsNotNil() {
+		if err := c.sourceString(dest, source, deep+1); err.IsNotNil() {
 			return err.
 				Throw()
 		}
