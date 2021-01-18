@@ -1,5 +1,0 @@
-[[__MetaData__]]
-LocaleName = "ru_RU"
-
-[Main]
-Greetings = "Привет, {{name}}!"

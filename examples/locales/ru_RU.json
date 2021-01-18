@@ -1,0 +1,8 @@
+{
+  "__MetaData__": {
+    "locale": "ru_RU"
+  },
+  "Main": {
+    "Greetings": "Привет, {{name}}!"
+  }
+}
