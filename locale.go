@@ -77,7 +77,11 @@ func (l *Locale) Tr(key string, args Args) string {
 			continue
 
 		} else if translatedPhrase, found := node.content[key]; found {
-			return args.applyTo(translatedPhrase)
+			if len(args) != 0 {
+				return newInterpolator(translatedPhrase, args).interpolate()
+			} else {
+				return translatedPhrase
+			}
 
 		} else {
 			return sptr(_SPTR_TRANSLATION_NOT_FOUND, originalKey)
