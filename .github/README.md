@@ -44,17 +44,17 @@ a:
 
 	privet.LC("en_US").MarkAsDefault()
 
-	enPhrase := privet.Tr("en_US", a/b", privet.Args{
-	"name": "Frank",
-})
-zhPhrase := privet.Tr("zh_CN", a/b", privet.Args{
-"name": "Dave",
-})
-unexistedLocalePhrase := privet.Tr("ru_RU", "a/b", nil)
-
-fmt.Println(enPhrase) // "Hello, Frank!"
-fmt.Println(zhPhrase) // "你好, Dave!"
-fmt.Println(unexistedLocalePhrase) // "Hello, {{name}}!" (en_US is default locale, args are not presented).
+	enPhrase := privet.Tr("en_US", "a/b", privet.Args{
+		"name": "Frank",
+	})
+	zhPhrase := privet.Tr("zh_CN", "a/b", privet.Args{
+		"name": "Dave",
+	})
+	unexistedLocalePhrase := privet.Tr("ru_RU", "a/b", nil)
+	
+	fmt.Println(enPhrase) // "Hello, Frank!" 
+	fmt.Println(zhPhrase) // "你好, Dave!" 
+	fmt.Println(unexistedLocalePhrase) // "Hello, {{name}}!" (en_US is default locale, args are not presented).
 }
 ```
 
