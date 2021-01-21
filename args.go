@@ -7,8 +7,8 @@ package privet
 
 type (
 	/*
-	Args represents map of arguments that is used for interpolating translated phrase.
-	TODO: example
+	Args represents map of arguments
+	that are used for interpolating translated phrase.
 	*/
 	Args map[string]interface{}
 )
