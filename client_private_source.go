@@ -8,6 +8,7 @@ package privet
 import (
 	"bytes"
 	"crypto/md5"
+	"encoding/hex"
 	"io"
 	"os"
 	"os/user"
@@ -158,7 +159,8 @@ func (c *Client) source(args []interface{}) *ekaerr.Error {
 			}
 		}
 
-		for j, m := 0, len(c.sourcesTmp); j < m && se2 == nil; j++ {
+		j = 0 // not shadowing, still using global
+		for m := len(c.sourcesTmp); j < m && se2 == nil; j++ {
 			if sources[i].md5 == c.sourcesTmp[j].md5 {
 				se2 = c.sourcesTmp
 			}
@@ -166,6 +168,18 @@ func (c *Client) source(args []interface{}) *ekaerr.Error {
 	}
 
 	if se2 != nil {
+
+		// Loops above interrupts not by "break" statement,
+		// but by loop condition.
+		//
+		// We using global loop indexes to use them here,
+		// but because "break" is not used, they will be incremented anyway,
+		// before loops meets condition that makes them stop.
+		//
+		// So, we have to decrease them.
+		i--
+		j--
+
 		return ekaerr.IllegalArgument.
 			New(s + "Two sources with the same content detected.").
 			AddFields(
@@ -434,6 +448,6 @@ func (_ *Client) sourceApprove(dest *[]SourceItem, typ SourceItemType, path stri
 		Type:    typ,
 		Path:    path,
 		content: content,
-		md5:     string(md5sum),
+		md5:     hex.EncodeToString(md5sum),
 	})
 }
