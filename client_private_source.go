@@ -159,7 +159,9 @@ func (c *Client) source(args []interface{}) *ekaerr.Error {
 			}
 		}
 
-		j = 0 // not shadowing, still using global
+		if se2 == nil {
+			j = 0 // not shadowing, still using global
+		}
 		for m := len(c.sourcesTmp); j < m && se2 == nil; j++ {
 			if sources[i].md5 == c.sourcesTmp[j].md5 {
 				se2 = c.sourcesTmp
