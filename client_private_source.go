@@ -10,6 +10,7 @@ import (
 	"crypto/md5"
 	"io"
 	"os"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -220,7 +221,28 @@ func (c *Client) sourceString(dest *[]SourceItem, source string, deep int) *ekae
 			Throw()
 	}
 
-	if !filepath.IsAbs(source) {
+	switch {
+	case !filepath.IsAbs(source) && source[0] == '~':
+		if usr, legacyErr := user.Current(); legacyErr == nil {
+			if usr.HomeDir != "" {
+				source = source[1:]
+				source = filepath.Join(usr.HomeDir, source)
+			} else {
+				return ekaerr.InternalError.
+					New(s + "Got relative path starting from home directory. " +
+						"Failed to get home directory of user. It is empty.").
+					AddFields("privet_source_rel_path", source).
+					Throw()
+			}
+		} else {
+			return ekaerr.InternalError.
+				Wrap(legacyErr, s + "Gor relative path starting from home directory. " +
+					"Failed to get home directory of user. ").
+				AddFields("privet_source_rel_path", source).
+				Throw()
+		}
+
+	case !filepath.IsAbs(source):
 		if workDir, legacyErr := os.Getwd(); legacyErr == nil {
 			source = filepath.Join(workDir, source)
 		} else {
