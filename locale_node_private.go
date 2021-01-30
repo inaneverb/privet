@@ -113,7 +113,15 @@ func (n *localeNode) applyRecursively(cb func(*localeNode), recursive ...bool) {
 
 	var applicator func(_ *localeNode, _ func(node *localeNode))
 
-	if len(recursive) > 0 && recursive[0] {
+	doRecursive := len(recursive) > 0 && recursive[0]
+
+	// TODO: There's a infinity loop dunno why, when two files have the duplicated
+	//  translated phrases (phrases with the same translation key).
+	//  Moreover, it leads to infinity loop only in an iterative algo.
+	//  So, till that issue is resolved, recursive algo is forced.
+	doRecursive = true
+
+	if doRecursive {
 		applicator = func(nodeToProcess *localeNode, cb func(*localeNode)) {
 			cb(nodeToProcess)
 			for _, nodeToProcess = range nodeToProcess.subNodes {
